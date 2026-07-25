@@ -38,14 +38,19 @@ Developed an **AI Lead Profiling Workflow** using **n8n**, **Groq AI**, **Google
 # System Architecture
 
 The system integrates **n8n**, **Webhook APIs**, **Groq AI**, **Google Sheets**, and **Gmail** to capture incoming lead information, standardize visitor data, perform AI-powered lead qualification, store categorized leads, and automatically notify the sales team with qualified lead details.
-![Architecture](Workflow/Architecture.png)
+<p align="center">
+  <img src="screenshots/ai_lead_profiling_automation_architecture.png" alt="AI Lead Profiling Automation Architecture" width="1000"/>
+</p>
+
 
 ---
 
 # Workflow
 
 Incoming leads are received through an **n8n Webhook**, transformed into a standardized format, analyzed using **Groq AI** for lead qualification and categorization, converted into structured JSON, saved in **Google Sheets**, and automatically shared with the sales team through **Gmail** for immediate follow-up.
-![Workflow Pipeline](Workflow/Workflow%20Pipeline.png)
+<p align="center">
+  <img src="screenshots/Workflow.png" alt="AI Lead Profiling Automation Workflow" width="1000"/>
+</p>
 
 ---
 
