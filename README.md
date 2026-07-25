@@ -1,4 +1,4 @@
-# AI Lead Profiling Automation using n8n, Groq AI & Google Workspace
+# AI Lead Profiling Automation using n8n, Claude Code, Groq AI & Google Workspace
 
 ---
 
