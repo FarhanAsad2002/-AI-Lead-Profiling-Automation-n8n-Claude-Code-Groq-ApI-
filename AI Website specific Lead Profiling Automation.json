@@ -1,0 +1,472 @@
+{
+  "name": "AI Website specific Lead Profiling Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-profiling",
+        "options": {}
+      },
+      "id": "ac8fc380-fe6a-4d80-9330-fa47ba3a6ef9",
+      "name": "Webhook - Lead Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        48
+      ],
+      "webhookId": "af17ca1e-3c2b-4232-8e37-7f12635abc4d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "name",
+              "name": "name",
+              "value": "={{ $json.body.name || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "value": "={{ $json.body.email || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "company",
+              "name": "company",
+              "value": "={{ $json.body.company || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "job_title",
+              "name": "job_title",
+              "value": "={{ $json.body.job_title || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "={{ $json.body.message || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "visited_pages",
+              "name": "visited_pages",
+              "value": "={{ Array.isArray($json.body.visited_pages) ? $json.body.visited_pages : [] }}",
+              "type": "array"
+            },
+            {
+              "id": "visited_pages_text",
+              "name": "visited_pages_text",
+              "value": "={{ Array.isArray($json.body.visited_pages) ? $json.body.visited_pages.join(\", \") : ($json.body.visited_pages || \"\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "79301db4-a111-4bcb-8d2a-4e7138f0926d",
+      "name": "Structure Lead Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a lead qualification specialist.\n\nAnalyze:\n- Visitor details\n- Message/query\n- Page visit history\n\nVisitor details:\n- Name: {{ $json.name }}\n- Email: {{ $json.email }}\n- Company: {{ $json.company }}\n- Job Title: {{ $json.job_title }}\n\nMessage/query:\n{{ $json.message }}\n\nPage visit history:\n{{ $json.visited_pages_text }}\n\nCategorize the lead into ONE category only:\nA. Organizational Development\nB. Sales Bots\n\nReturn JSON only:\n{ \"category\": \"\", \"confidence\": \"\", \"reasoning\": \"\" }\n\nRules:\n- If the visitor is interested in sales coaching, roleplays, sales training, SDR productivity, prospecting, or AI sales tools, classify as Sales Bots.\n- If the visitor is interested in leadership development, employee growth, learning programs, training programs, organizational effectiveness, or workforce development, classify as Organizational Development.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "89e7d157-fb4b-415f-ab82-e13f6a5924b7",
+      "name": "Categorize Lead",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        448,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "6b009e94-8171-4ecd-b0f4-f7fa8d92d551",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        448,
+        224
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "SZGwfEPgvfSl9CTN",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"category\": \"Sales Bots\",\n  \"confidence\": \"High\",\n  \"reasoning\": \"The visitor viewed sales training and roleplay pages and asked about AI sales coaching tools.\"\n}"
+      },
+      "id": "7fe28cad-dc9b-4304-b536-ebd6c229bf2c",
+      "name": "Parse Lead JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1_9eG3UXbodPU3QV7cHr1jcpuWB1CJbGEZYhiW0XSLsI/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "Name": "={{ $('Structure Lead Data').item.json.name }}",
+            "Email": "={{ $('Structure Lead Data').item.json.email }}",
+            "Company": "={{ $('Structure Lead Data').item.json.company }}",
+            "Job Title": "={{ $('Structure Lead Data').item.json.job_title }}",
+            "Message": "={{ $('Structure Lead Data').item.json.message }}",
+            "Visited Pages": "={{ $('Structure Lead Data').item.json.visited_pages_text }}",
+            "Category": "={{ $json.output.category }}",
+            "Confidence": "={{ $json.output.confidence }}",
+            "Reasoning": "={{ $json.output.reasoning }}"
+          },
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job Title",
+              "displayName": "Job Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Visited Pages",
+              "displayName": "Visited Pages",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Confidence",
+              "displayName": "Confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reasoning",
+              "displayName": "Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "26904fc0-7f0f-4b03-bf40-4617ce958da3",
+      "name": "Save Lead to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        48
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VFpgNnDpH357MkJl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "farhan.asad2002@gmail.com",
+        "subject": "={{ 'New Profiled Lead - ' + $('Categorize Lead').item.json.output.category }}",
+        "emailType": "text",
+        "message": "=New Lead Received\n\nName: {{ $('Structure Lead Data').item.json.name }}\nEmail: {{ $('Structure Lead Data').item.json.email }}\nCompany: {{ $('Structure Lead Data').item.json.company }}\nJob Title: {{ $('Structure Lead Data').item.json.job_title }}\n\nMessage:\n{{ $('Structure Lead Data').item.json.message }}\n\nVisited Pages:\n{{ $('Structure Lead Data').item.json.visited_pages_text }}\n\nCategory:\n{{ $('Categorize Lead').item.json.output.category }}\n\nConfidence:\n{{ $('Categorize Lead').item.json.output.confidence }}\n\nReasoning:\n{{ $('Categorize Lead').item.json.output.reasoning }}",
+        "options": {}
+      },
+      "id": "0c522958-1079-4c82-bda4-9842234decb8",
+      "name": "Notify Sales Team",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        48
+      ],
+      "webhookId": "40047f8f-c4ff-48f6-afdc-11fd857002a4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ht7uoB5t0h41DpPV",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## LEAD INTAKE\n**Receives lead data from:\n• Website Form\n• CRM\n• Landing Page\n• API** ",
+        "height": 592,
+        "width": 192,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -240
+      ],
+      "id": "2a50caf4-7637-4454-9df1-827e09cbcb21",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## STRUCTURE LEAD INTAKE\n**Formats visitor details\ninto a consistent structure.** \n\n",
+        "height": 592,
+        "width": 192,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        176,
+        -240
+      ],
+      "id": "bb166b31-ee06-4d4a-a67f-1e23aec69da1",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "##  AI LEAD CATEGORIZATION\n**• Analyzes lead information\n• Reviews website activity\n• Uses Groq AI for classification\n• Categorizes as:\n  - Organizational Development\n  - Sales Bots\n• Returns structured JSON** ",
+        "height": 592,
+        "width": 320,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -240
+      ],
+      "id": "6dd86220-39f7-4f63-913a-8b3d0b9aa6cf",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## SAVES LEAD \n**Stores categorized\nlead data in\nGoogle Sheets.**",
+        "height": 592,
+        "width": 192,
+        "color": "#AF2AC0"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        -240
+      ],
+      "id": "ad57e7a1-8a6c-44ab-af47-292ed77b2e95",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## NOTIFY SALES TEAM\n**Emails the sales team\nwith qualified lead\ndetails instantly.**",
+        "height": 592,
+        "width": 192,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        976,
+        -240
+      ],
+      "id": "6cf3ebcd-4729-42fa-b229-0f90f3535f0d",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 🌐 AI Lead Profiling Automation \n**An AI-powered workflow that captures, enriches, categorizes, and stores website leads while automatically notifying the sales team for timely follow-up.**",
+        "height": 144,
+        "width": 752,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -416
+      ],
+      "id": "4e38f64a-a0fb-4fae-99fc-c0706de7fd87",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Lead Intake": {
+      "main": [
+        [
+          {
+            "node": "Structure Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Categorize Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categorize Lead": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Categorize Lead",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Lead JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Categorize Lead",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Notify Sales Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "dbbf3e64-b723-4eae-bf80-52da365e09db",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9451e5e0ee5c5d8d21ddfecaa983a96bd38b55815a71dcf85419ea014d68c2b5"
+  },
+  "nodeGroups": [],
+  "id": "FEAEzGlmGFQhI6HT",
+  "tags": []
+}
